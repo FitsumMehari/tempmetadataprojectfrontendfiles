@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Metadata display page</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css"
+		integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A=="
+		crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<link rel="stylesheet" href="metadata.css" />
+
+	<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+		integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+		crossorigin="anonymous"></script>
+
+	<script src="https://code.jquery.com/jquery-3.6.0.js"
+		integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+
+	<style>
+		.loading {
+			width: 100px;
+			height: 100px;
+			border: 10px solid red;
+			border-radius: 50%;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			fill: red;
+		}
+
+		.hide {
+			display: none;
+		}
+	</style>
+
+</head>
+
+<body>
+	<header>
+		<!-- left nav-bar -->
+		<nav class="nav-bar">
+			<div class="nav-logo">
+				<div class="logo-head">
+					<div class="logo"><a href="#"></a></div>
+					<div class="logo"><a href="#"></a></div>
+				</div>
+			</div>
+			<!-- right nav-bar -->
+			<div class="nav-menu">
+				<ul>
+					<li id="saved-files" class="nav-item"><a href="#">Saved files</a></li>
+					<li id="manage-account" class="nav-item">
+						<a class="manage" href="#">Manage account <i id="m-icon" class="fa-solid fa-angle-down"></i></a>
+						<div class="dropdown_menu">
+							<ul>
+								<li>
+									<a href="#">Adedolapo Bodede <i class="fa-solid fa-circle-user"></i></a>
+									<p>adedolapobodede@gmail.com</p>
+								</li>
+								<li>
+									<a href="#" id="change-password">Change password<i
+											class="fa-solid fa-unlock-keyhole"></i></a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				</ul>
+			</div>
+			<!-- mobile view hamburger -->
+			<div class="hamburger">
+				<img src="/icons/hamburger/Vector.svg" class="hamburger-image" alt="menu" />
+			</div>
+		</nav>
+	</header>
+	<!-- main section-->
+	<main>
+		<section class="section1">
+			<div id="display_file">
+				<figure>
+					<img id="chosen-file" />
+					<figcaption id="file-name"></figcaption>
+				</figure>
+			</div>
+		</section>
+
+		<section class="section2">
+			<form action="http://localhost:3000/files/62ed84213777aca6a51c2352" enctype="multipart/form-data"
+				method="post" id="formD">
+				<input type="file" name="uploaded_file" id="file_input" accept="image/*, .json, .pdf, .csv" />
+				<label for="file_input">Upload new file</label>
+				<input type="submit" value="Generate Metadata" id="uploadBtn">
+			</form>
+		</section>
+
+		<section class="section3">
+			<div class="container">
+				<div id="display-metadata"></div>
+			</div>
+		</section>
+
+		<section class="section4">
+			<button id="share-btn">Share</button>
+			<button id="download-btn">Download</button>
+		</section>
+	</main>
+
+	<div class="loading hide" id="loading"></div>
+
+	<script src="metadata.js"></script>
+
+	<script>
+		//adding event listener to the log in button
+		$("#formD").submit(async function (e) {
+			e.preventDefault();
+			var formData = new FormData(this);
+
+			//this is for showing the loading screen
+			$("#loading").removeClass('hide')
+
+			$.ajax({
+				type: "POST",
+				headers: { 'token': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYyZWQ4NDIxMzc3N2FjYTZhNTFjMjM1MiIsImlhdCI6MTY1OTczMzM3OSwiZXhwIjoxNjYwMzM4MTc5fQ.6H3IXcS2nuemWBj1fwV49xsLIPLFldrJ8arB_2LFoFQ' },
+				url: "http://localhost:3000/files/62ed84213777aca6a51c2352",
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: await function (r) {
+					console.log("result", r)
+					$("#display-metadata").append(`<p>${r.metadata}</p>`)
+					localStorage.setItem('fileUrl', r.fileURL)
+					localStorage.setItem('fileName', r.fileName)
+
+					//this is for hiding the loading screen
+					$("#loading").addClass('hide')
+				},
+				error: function (e) {
+					console.log("some error", e);
+				}
+			});
+
+		});
+
+		//link for downloading the file
+
+		$("#download-btn").on('click', () => {
+
+			var fileUrl = localStorage.getItem("fileUrl")
+			var fileName = localStorage.getItem("fileName")
+
+
+			fetch(fileUrl)
+				.then(resp => resp.blob())
+				.then(blob => {
+					const url = window.URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.style.display = 'none';
+					a.href = url;
+					// the filename you want
+					a.download = fileName;
+					document.body.appendChild(a);
+					a.click();
+					window.URL.revokeObjectURL(url);
+					alert('your file has been downloaded!'); // or you know, something with better UX...
+				})
+				.catch(() => alert('Somethin went wrong!'));
+		})
+
+	</script>
+</body>
+
+</html>
